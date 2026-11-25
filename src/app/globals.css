@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@config '../../tailwind.config.js';
 
 /* ============================================
     NexVid – Apple Sequoia Pitch Black Glass
@@ -468,7 +467,8 @@ body {
   cursor: pointer;
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease display inline-flex;
+    box-shadow 0.2s ease;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   user-select: none;
