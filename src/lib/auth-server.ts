@@ -1,11 +1,19 @@
 import { NextRequest } from 'next/server';
 
-const DEFAULT_PROD_API_URL = 'https://nexvid-proxy.piotrunius.workers.dev';
+const CLOUD_FEATURES_ENABLED = process.env.NEXT_PUBLIC_CLOUD_FEATURES_ENABLED === 'true';
 
-function resolveCloudApiUrl(): string {
-  const configuredValue = process.env.API_URL || '';
-  const configured = (configuredValue || '').trim().replace(/\/+$/, '');
-  return configured || DEFAULT_PROD_API_URL;
+function resolveCloudApiUrl(): string | null {
+  if (!CLOUD_FEATURES_ENABLED) return null;
+  const configured = (process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '').trim();
+  if (!configured) return null;
+
+  try {
+    const url = new URL(configured);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
+    return configured.replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -17,6 +25,7 @@ export async function isValidCloudSession(
   tokenOverride?: string,
 ): Promise<boolean> {
   const apiBase = resolveCloudApiUrl();
+  if (!apiBase) return false;
   const incomingCookie = request.headers.get('cookie') || '';
 
   // Extract token from Authorization header or override

@@ -47,6 +47,26 @@ export default function LoginPage() {
 
   if (isLoggedIn) return null;
 
+  if (!hasBackendConfigured) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-4 pt-24 pb-20">
+        <section className="w-full max-w-md rounded-[24px] border border-white/10 bg-white/[0.02] p-8 text-center shadow-[0_10px_28px_rgba(0,0,0,0.35)]">
+          <h1 className="text-text-primary text-2xl font-bold">Cloud sign-in is unavailable</h1>
+          <p className="text-text-secondary mt-3 text-sm leading-relaxed">
+            Cloud accounts and synced features are currently turned off. You can continue browsing
+            without signing in.
+          </p>
+          <Link
+            href="/"
+            className="btn-accent mt-6 inline-flex items-center justify-center px-6 py-3 font-bold"
+          >
+            Continue browsing
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === 'register' && password !== confirmPassword) {
@@ -110,7 +130,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 pb-20 pt-24">
+    <div className="flex min-h-screen items-center justify-center px-4 pt-24 pb-20">
       <div className="w-full max-w-md">
         {/* Banner Logo */}
         <div className="mb-8 rounded-[24px] border border-white/10 bg-white/[0.02] p-5 text-center shadow-[0_10px_28px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6">
@@ -118,7 +138,7 @@ export default function LoginPage() {
             <span className="text-accent">Nex</span>
             <span className="text-text-primary">Vid</span>
           </Link>
-          <p className="mt-1 text-[13px] text-text-muted">
+          <p className="text-text-muted mt-1 text-[13px]">
             {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
           </p>
         </div>
@@ -129,13 +149,13 @@ export default function LoginPage() {
           <div className="mb-6 flex w-full gap-2 rounded-full bg-white/5 p-1">
             <button
               onClick={() => setMode('login')}
-              className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-wider transition-all ${mode === 'login' ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-full border px-4 py-2 text-[11px] font-black tracking-wider whitespace-nowrap uppercase transition-all ${mode === 'login' ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
             >
               Sign In
             </button>
             <button
               onClick={() => setMode('register')}
-              className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-wider transition-all ${mode === 'register' ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-full border px-4 py-2 text-[11px] font-black tracking-wider whitespace-nowrap uppercase transition-all ${mode === 'register' ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
             >
               Register
             </button>
@@ -143,7 +163,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
+              <label className="text-text-secondary mb-1.5 block text-[12px] font-medium">
                 Nickname
               </label>
               <input
@@ -158,7 +178,7 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
+              <label className="text-text-secondary mb-1.5 block text-[12px] font-medium">
                 Password
               </label>
               <input
@@ -174,7 +194,7 @@ export default function LoginPage() {
             </div>
             {mode === 'register' && (
               <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
+                <label className="text-text-secondary mb-1.5 block text-[12px] font-medium">
                   Confirm Password
                 </label>
                 <input
@@ -200,7 +220,7 @@ export default function LoginPage() {
           </form>
 
           {!hasBackendConfigured && (
-            <p className="mt-4 text-center text-[11px] text-text-muted">
+            <p className="text-text-muted mt-4 text-center text-[11px]">
               Local accounts are stored in your browser. No server required.
             </p>
           )}

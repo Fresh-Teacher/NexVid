@@ -1,6 +1,6 @@
 const AUTH_TOKEN_KEY = 'nexvid-auth-token';
-const DEFAULT_PROD_API_URL = 'https://nexvid-proxy.piotrunius.workers.dev';
 const CLOUD_REQUEST_TIMEOUT_MS = 10000;
+const CLOUD_FEATURES_ENABLED = process.env.NEXT_PUBLIC_CLOUD_FEATURES_ENABLED === 'true';
 
 export class CloudApiError extends Error {
   status: number;
@@ -20,26 +20,19 @@ function isLocalHost(hostname: string): boolean {
 }
 
 function getApiUrl(): string {
-  if (typeof window !== 'undefined') {
-    return '/api/proxy';
+  if (!CLOUD_FEATURES_ENABLED) return '';
+  if (typeof window !== 'undefined') return '/api/proxy';
+
+  const configured = (process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '').trim();
+  if (!configured) return '';
+
+  try {
+    const configuredUrl = new URL(configured);
+    if (!['http:', 'https:'].includes(configuredUrl.protocol)) return '';
+    return configured.replace(/\/+$/, '');
+  } catch {
+    return '';
   }
-
-  const configured = (process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '').replace(
-    /\/+$/,
-    '',
-  );
-
-  if (configured) {
-    try {
-      const configuredUrl = new URL(configured);
-      return configured;
-    } catch {
-      return configured;
-    }
-  }
-
-  // Fallback for production server-side fetch
-  return DEFAULT_PROD_API_URL;
 }
 
 async function fetchWithTimeout(
@@ -104,7 +97,9 @@ export function clearCloudToken() {
 
 export async function cloudFetch<T = any>(path: string, init: RequestInit = {}): Promise<T> {
   const apiUrl = getApiUrl();
-  if (!apiUrl) throw new Error('Cloud API URL is not configured');
+  if (!apiUrl) {
+    throw new CloudApiError('Cloud features are disabled', 503, 'BACKEND_DISABLED');
+  }
 
   const token = getCloudToken();
   const headers = new Headers(init.headers || {});
@@ -144,7 +139,7 @@ export async function cloudFetch<T = any>(path: string, init: RequestInit = {}):
     throw new CloudApiError(
       data?.error || `Cloud API error (${response.status})`,
       response.status,
-      'HTTP_ERROR',
+      data?.code || 'HTTP_ERROR',
     );
   }
 
@@ -336,6 +331,7 @@ export async function deleteAdminBlockedMedia(tmdbId: string, mediaType: 'movie'
 }
 
 export async function loadPublicBlockedMedia() {
+  if (!hasCloudBackend()) return { items: [] as { tmdbId: string; mediaType: string }[] };
   return cloudFetch<{ items: { tmdbId: string; mediaType: string }[] }>('/public/blocked-media', {
     method: 'GET',
     cache: 'no-store',

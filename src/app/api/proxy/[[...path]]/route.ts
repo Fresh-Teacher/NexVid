@@ -3,10 +3,18 @@ import { LIMITS, VALID_USERNAME_REGEX } from '@/lib/validation';
 
 export const runtime = 'edge';
 
-const WORKER_URL = (process.env.API_URL || 'https://nexvid-proxy.piotrunius.workers.dev').replace(
-  /\/+$/,
-  '',
-);
+const CLOUD_FEATURES_ENABLED = process.env.NEXT_PUBLIC_CLOUD_FEATURES_ENABLED === 'true';
+const CONFIGURED_WORKER_URL = (process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || '').trim();
+const WORKER_URL = (() => {
+  if (!CLOUD_FEATURES_ENABLED || !CONFIGURED_WORKER_URL) return '';
+  try {
+    const url = new URL(CONFIGURED_WORKER_URL);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return '';
+    return CONFIGURED_WORKER_URL.replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+})();
 
 function sanitizeIpCandidate(value?: string | null): string | null {
   const raw = String(value || '').trim();
@@ -141,6 +149,13 @@ function validatePayload(path: string, body: any): string | null {
 }
 
 export async function ANY(req: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) {
+  if (!WORKER_URL) {
+    return NextResponse.json(
+      { error: 'Cloud features are disabled', code: 'BACKEND_DISABLED' },
+      { status: 503 },
+    );
+  }
+
   try {
     const { path: pathSegments } = await params;
     const path = pathSegments && pathSegments.length > 0 ? pathSegments.join('/') : 'proxy';

@@ -1,6 +1,6 @@
 'use client';
 
-import { cloudFetch } from '@/lib/cloudSync';
+import { cloudFetch, hasCloudBackend } from '@/lib/cloudSync';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -34,6 +34,8 @@ export function SurveyModal() {
   const isHomepage = pathname === '/' || pathname === '';
 
   useEffect(() => {
+    if (!hasCloudBackend()) return;
+
     if (!isHomepage) {
       if (isVisible) setIsVisible(false);
       return;
@@ -140,8 +142,8 @@ export function SurveyModal() {
   if (!isVisible || !survey || !currentQuestion) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex animate-fade-in items-center justify-center bg-black/75 p-4 backdrop-blur-md">
-      <div className="w-full max-w-md animate-scale-in overflow-hidden rounded-[28px] border border-white/10 bg-[#050608]/95 shadow-[0_24px_80px_rgba(0,0,0,0.75)]">
+    <div className="animate-fade-in fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+      <div className="animate-scale-in w-full max-w-md overflow-hidden rounded-[28px] border border-white/10 bg-[#050608]/95 shadow-[0_24px_80px_rgba(0,0,0,0.75)]">
         <div className="relative p-8 text-center">
           <h2 className="mb-3 text-[22px] font-black tracking-tight text-white">{survey.title}</h2>
           {survey.description && (
@@ -150,7 +152,7 @@ export function SurveyModal() {
 
           <div className="mb-8 space-y-4">
             <div className="flex items-center justify-between gap-2 px-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-accent">
+              <span className="text-accent text-[10px] font-bold tracking-widest uppercase">
                 Question {step + 1} of {survey.questions.length}
               </span>
               <div className="flex gap-1">
@@ -165,7 +167,7 @@ export function SurveyModal() {
                 ))}
               </div>
             </div>
-            <p className="text-center text-[15px] font-medium leading-tight text-white/80">
+            <p className="text-center text-[15px] leading-tight font-medium text-white/80">
               {currentQuestion.text}
             </p>
           </div>
@@ -273,7 +275,7 @@ export function SurveyModal() {
             <button
               disabled={isSubmitting || !hasCurrentAnswer}
               onClick={handleNext}
-              className="btn-accent flex w-full items-center justify-center py-4 font-bold uppercase tracking-widest shadow-[0_8px_24px_rgba(var(--accent-rgb),0.3)]"
+              className="btn-accent flex w-full items-center justify-center py-4 font-bold tracking-widest uppercase shadow-[0_8px_24px_rgba(var(--accent-rgb),0.3)]"
             >
               {isSubmitting
                 ? 'Sending...'
