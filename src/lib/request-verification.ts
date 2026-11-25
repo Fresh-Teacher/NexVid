@@ -38,8 +38,9 @@ function extractHostname(headerValue: string | null): string | null {
 function isHostAllowed(host: string): boolean {
   const allowedPatterns = parseCsvSet(process.env.ALLOWED_ORIGINS);
 
-  // Implied defaults if not specified in env
-  const defaultHosts = [CANONICAL_HOST, `www.${CANONICAL_HOST}`];
+  // Implied defaults if not specified in env. Loopback hosts are needed when
+  // running a production build through the local preview server.
+  const defaultHosts = [CANONICAL_HOST, `www.${CANONICAL_HOST}`, 'localhost', '127.0.0.1', '::1'];
 
   // Check against explicit patterns
   const isAllowed = allowedPatterns.some((pattern) => {
