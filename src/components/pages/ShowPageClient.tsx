@@ -503,6 +503,7 @@ export default function ShowPage({
           >
             <button
               onClick={() => setShowTrailer(false)}
+              aria-label="Close trailer"
               className="absolute -top-10 right-0 rounded-full bg-white/10 p-2 text-white/70 transition-all hover:bg-white/20 hover:text-white"
             >
               <svg
@@ -517,9 +518,10 @@ export default function ShowPage({
               </svg>
             </button>
             <iframe
-              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1`}
+              src={`https://www.youtube-nocookie.com/embed/${trailer.key}?autoplay=1&playsinline=1&rel=0`}
+              title={`${show.title} trailer`}
               className="h-full w-full rounded-[var(--glass-radius-lg)] shadow-[var(--shadow-xl)]"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
           </div>

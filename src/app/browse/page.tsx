@@ -10,14 +10,28 @@ import { discover, getGenres, getPopular, getTrending } from '@/lib/tmdb';
 import { cn } from '@/lib/utils';
 import { useBlockedContentStore } from '@/stores/blockedContent';
 import type { Genre, MediaItem } from '@/types';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 type Tab = 'trending' | 'movies' | 'shows';
 type Filter = 'popular' | 'top_rated' | string;
 
+function getTabFromQuery(value: string | null): Tab {
+  return value === 'movies' || value === 'shows' ? value : 'trending';
+}
+
 export default function BrowsePage() {
-  const [tab, setTab] = useState<Tab>('trending');
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" aria-label="Loading browse page" />}>
+      <BrowseContent />
+    </Suspense>
+  );
+}
+
+function BrowseContent() {
+  const searchParams = useSearchParams();
+  const requestedTab = getTabFromQuery(searchParams.get('tab'));
+  const [tab, setTab] = useState<Tab>(requestedTab);
   const [filter, setFilter] = useState<Filter>('popular');
   const [year, setYear] = useState('');
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -27,8 +41,14 @@ export default function BrowsePage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const requestIdRef = useRef(0);
   const { blockedItems, isBlocked } = useBlockedContentStore();
   const router = useRouter();
+
+  useEffect(() => {
+    setTab(requestedTab);
+    setFilter('popular');
+  }, [requestedTab]);
 
   useEffect(() => {
     (async () => {
@@ -46,15 +66,9 @@ export default function BrowsePage() {
     else setGenres([]);
   }, [tab, movieGenres, tvGenres]);
 
-  useEffect(() => {
-    setItems([]);
-    setPage(1);
-    setHasMore(true);
-    loadItems(1, true);
-  }, [tab, filter, year]);
-
   const loadItems = useCallback(
     async (p: number, reset = false) => {
+      const requestId = ++requestIdRef.current;
       setIsLoading(true);
       try {
         let results: MediaItem[] = [];
@@ -83,18 +97,29 @@ export default function BrowsePage() {
           results = await discover(mediaType as 'movie' | 'tv', params);
         }
 
+        if (requestId !== requestIdRef.current) return;
+
         const filteredResults = results.filter((item) => !isBlocked(item.tmdbId, item.mediaType));
 
-        if (results.length < 20) setHasMore(false);
+        setHasMore(results.length >= 20);
         setItems((prev) => (reset ? filteredResults : [...prev, ...filteredResults]));
       } catch (err) {
-        console.error('Failed to load browse items:', err);
+        if (requestId === requestIdRef.current) {
+          console.error('Failed to load browse items:', err);
+        }
       } finally {
-        setIsLoading(false);
+        if (requestId === requestIdRef.current) setIsLoading(false);
       }
     },
-    [tab, filter, year, blockedItems],
+    [tab, filter, year, blockedItems, isBlocked],
   );
+
+  useEffect(() => {
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+    loadItems(1, true);
+  }, [tab, filter, year, loadItems]);
 
   const loadMore = () => {
     if (!isLoading && hasMore) {
@@ -189,26 +214,27 @@ export default function BrowsePage() {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-10 pt-24">
+    <div className="relative min-h-screen overflow-hidden pt-24 pb-10">
       <div className="px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
         <div className="mb-5 rounded-[24px] border border-white/10 bg-white/[0.02] p-5 shadow-[0_10px_28px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-6">
-          <h1 className="text-[30px] font-bold tracking-tight text-text-primary">Browse</h1>
-          <p className="mt-1 text-[13px] text-text-muted">
+          <h1 className="text-text-primary text-[30px] font-bold tracking-tight">Browse</h1>
+          <p className="text-text-muted mt-1 text-[13px]">
             Discover trending titles and explore by genre
           </p>
         </div>
 
         {/* Segmented control matching Admin Feedback style */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex w-fit gap-2 rounded-full bg-white/5 p-1">
+          <div className="flex max-w-full shrink-0 scrollbar-none gap-2 overflow-x-auto rounded-full bg-white/5 p-1">
             {tabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => {
                   setTab(t.key);
                   setFilter('popular');
+                  router.replace(`/browse?tab=${t.key}`, { scroll: false });
                 }}
-                className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all ${tab === t.key ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] font-black tracking-wider uppercase transition-all ${tab === t.key ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
               >
                 <span className="opacity-80">{t.icon}</span>
                 {t.label}
@@ -223,7 +249,7 @@ export default function BrowsePage() {
                 placeholder="Year"
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-24 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[13px] text-white transition-colors placeholder:text-white/20 hover:bg-white/[0.08] focus:outline-none focus:ring-1 focus:ring-accent"
+                className="focus:ring-accent w-24 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[13px] text-white transition-colors placeholder:text-white/20 hover:bg-white/[0.08] focus:ring-1 focus:outline-none"
               />
             )}
 
@@ -244,7 +270,7 @@ export default function BrowsePage() {
               <button
                 key={f.key}
                 onClick={() => setFilter(f.key)}
-                className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all ${filter === f.key ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
+                className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] font-black tracking-wider whitespace-nowrap uppercase transition-all ${filter === f.key ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
               >
                 {f.label}
               </button>
@@ -254,7 +280,7 @@ export default function BrowsePage() {
               <button
                 key={g.id}
                 onClick={() => setFilter(String(g.id))}
-                className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all ${filter === String(g.id) ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
+                className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] font-black tracking-wider whitespace-nowrap uppercase transition-all ${filter === String(g.id) ? 'border-accent-glow bg-accent-muted text-accent' : 'border-transparent bg-transparent text-white/40 hover:text-white'}`}
               >
                 {g.name}
               </button>

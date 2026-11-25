@@ -52,11 +52,13 @@ export function FeaturedHeroClient({ items }: FeaturedHeroClientProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (featuredItems.length === 0) {
-    return <section className="relative h-[90vh] min-h-[640px] animate-pulse bg-black" />;
+    return (
+      <section className="relative h-[72svh] max-h-[650px] min-h-[460px] animate-pulse bg-black sm:h-[90vh] sm:max-h-none sm:min-h-[640px]" />
+    );
   }
 
   return (
-    <section className="relative h-[90vh] min-h-[640px] overflow-hidden bg-black">
+    <section className="relative h-[72svh] max-h-[650px] min-h-[460px] overflow-hidden bg-black sm:h-[90vh] sm:max-h-none sm:min-h-[640px]">
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -116,20 +118,20 @@ export function FeaturedHeroClient({ items }: FeaturedHeroClientProps) {
                   }`}
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-white backdrop-blur-[10px]">
+                    <span className="rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-bold tracking-widest text-white uppercase backdrop-blur-[10px]">
                       {item.mediaType === 'movie' ? 'Movie' : 'TV'}
                     </span>
-                    <span className="rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-white backdrop-blur-[10px]">
+                    <span className="rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-bold tracking-widest text-white uppercase backdrop-blur-[10px]">
                       {item.releaseYear || 'N/A'}
                     </span>
-                    {(item.voteAverage ?? 0) > 0 && (
-                      <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 text-[11px] font-bold uppercase tracking-widest text-emerald-200 backdrop-blur-[10px]">
-                        {((item.voteAverage ?? 0) * 10).toFixed(0)}% Match
+                    {item.rating > 0 && (
+                      <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 text-[11px] font-bold tracking-widest text-emerald-200 uppercase backdrop-blur-[10px]">
+                        {(item.rating * 10).toFixed(0)}% Match
                       </span>
                     )}
                   </div>
 
-                  <h1 className="text-[34px] font-black leading-[1.05] tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-[44px] lg:text-[52px]">
+                  <h1 className="text-[34px] leading-[1.05] font-black tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] sm:text-[44px] lg:text-[52px]">
                     {item.title}
                   </h1>
 
@@ -202,7 +204,7 @@ export function FeaturedHeroClient({ items }: FeaturedHeroClientProps) {
               </div>
 
               {/* Desktop: vertical pills on right edge */}
-              <div className="absolute right-6 top-1/2 z-20 hidden h-48 -translate-y-1/2 flex-col gap-2.5 sm:flex lg:right-10 xl:right-14 2xl:right-16">
+              <div className="absolute top-1/2 right-6 z-20 hidden h-48 -translate-y-1/2 flex-col gap-2.5 sm:flex lg:right-10 xl:right-14 2xl:right-16">
                 {dots.map(({ isActive, isPast, handleClick, index }) => (
                   <button
                     key={`desk-${index}`}

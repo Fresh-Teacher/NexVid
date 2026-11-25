@@ -7,7 +7,7 @@ import { FeaturedHeroClient } from '@/components/pages/FeaturedHeroClient';
 import { HomePageClient } from '@/components/pages/HomePageClient';
 import { loadPublicBlockedMedia } from '@/lib/cloudSync';
 import { toTmdbMediaType } from '@/lib/mediaType';
-import { getPopular, getTopRated, getTrending, getTitleLogoSvgPath } from '@/lib/tmdb';
+import { getPopular, getTopRated, getTrending } from '@/lib/tmdb';
 import type { MediaItem } from '@/types';
 
 export const runtime = 'edge';
@@ -15,14 +15,18 @@ export const revalidate = 3600; // Revalidate every hour
 
 export default async function HomePage() {
   let trending: MediaItem[] = [];
+  let trendingMovies: MediaItem[] = [];
   let popular: MediaItem[] = [];
+  let popularShows: MediaItem[] = [];
   let topMovies: MediaItem[] = [];
   let topShows: MediaItem[] = [];
 
   try {
-    const [t, p, m, s, blockedRes] = await Promise.all([
+    const [t, tm, p, ps, m, s, blockedRes] = await Promise.all([
       getTrending('all', 'week'),
+      getTrending('movie', 'week'),
       getPopular('movie'),
+      getPopular('tv'),
       getTopRated('movie'),
       getTopRated('tv'),
       loadPublicBlockedMedia().catch(() => ({ items: [] })),
@@ -38,7 +42,9 @@ export default async function HomePage() {
       });
 
     trending = filterBlocked(t);
+    trendingMovies = filterBlocked(tm);
     popular = filterBlocked(p);
+    popularShows = filterBlocked(ps);
     topMovies = filterBlocked(m);
     topShows = filterBlocked(s);
   } catch (err) {
@@ -51,9 +57,7 @@ export default async function HomePage() {
       <FeaturedHeroClient items={trending.slice(0, 20)} />
 
       {/* ── Content Rows ── */}
-      <div className="relative z-10 -mt-32 space-y-4 pb-24 sm:-mt-36">
-        <HomePageClient />
-
+      <div className="relative z-10 -mt-24 space-y-2 pb-24 sm:-mt-36 sm:space-y-4">
         <MediaRow
           title="Trending This Week"
           items={trending}
@@ -63,9 +67,23 @@ export default async function HomePage() {
           seeAllAsButton
         />
         <MediaRow
+          title="Trending Movies"
+          items={trendingMovies}
+          href="/browse?tab=movies"
+          enableControls
+          seeAllAsButton
+        />
+        <MediaRow
           title="Popular Movies"
           items={popular}
           href="/browse?tab=movies"
+          enableControls
+          seeAllAsButton
+        />
+        <MediaRow
+          title="Popular TV Shows"
+          items={popularShows}
+          href="/browse?tab=shows"
           enableControls
           seeAllAsButton
         />
@@ -83,6 +101,7 @@ export default async function HomePage() {
           enableControls
           seeAllAsButton
         />
+        <HomePageClient />
       </div>
     </div>
   );
